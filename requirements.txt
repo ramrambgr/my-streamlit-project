@@ -1,0 +1,7 @@
+streamlit
+Pillow
+torch
+transformers
+ctransformers
+PyPDF2
+python-docx
