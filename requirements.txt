@@ -1,7 +1,6 @@
 streamlit
 Pillow
 torch
-transformers
-ctransformers
+transformers[vision]
 PyPDF2
 python-docx
