@@ -1,6 +1,6 @@
-streamlit
-Pillow
-torch
-transformers[vision]
-PyPDF2
-python-docx
+streamlit==1.33.0
+Pillow==10.2.0
+torch==2.1.2
+transformers[vision]==4.38.2
+PyPDF2==3.0.1
+python-docx==1.1.0
