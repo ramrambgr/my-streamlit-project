@@ -94,7 +94,7 @@ def generate_prompt(caption, user_input, language="id", reference_text=None):
     if reference_text:
         if len(reference_text) > MAX_REF_CHARS:
             reference_text = reference_text[:MAX_REF_CHARS] + "\n... [Referensi dipotong agar tidak terlalu panjang]"
-        
+
         reference_section = f"""
 Berikut adalah referensi tulisan dari pengguna. Referensi ini **hanya digunakan untuk memahami gaya penulisan** dan **bukan untuk disalin langsung atau dianggap sebagai isi berita**:
 \"\"\"
@@ -146,7 +146,9 @@ Gunakan gaya bahasa jurnalistik Indonesia yang alami dan hindari kalimat terjema
 
 # --- Generate Response ---
 def generate_response(model, prompt, system_prompt="Kamu adalah AI Assistant yang membantu dalam jurnalisme dan penulisan berita."):
-    formatted_prompt = f"""<s>[INST] <<SYS>>\n{system_prompt}\n<</SYS>>\n\n{prompt} [/INST]"""
+    formatted_prompt = f"""<s>[INST] <<SYS>>
+{system_prompt}
+<</SYS>>\n\n{prompt} [/INST]"""
     return model(formatted_prompt)
 
 # --- UI Start ---
@@ -165,32 +167,40 @@ except Exception as e:
 
 processor, caption_model = load_caption_model()
 
+# --- File uploader without max_size argument ---
 uploaded_file = st.file_uploader("📷 Upload gambar kejadian atau ilustrasi:", type=["jpg", "jpeg", "png"])
+
 image_caption = None
 
 if uploaded_file:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Gambar yang diunggah", use_column_width=True)
+    file_size = len(uploaded_file.getvalue())  # Dapatkan ukuran file dalam byte
+    max_size = 10 * 1024 * 1024  # 10 MB
+    
+    if file_size > max_size:
+        st.warning("⚠️ File terlalu besar! Maksimal ukuran file adalah 10 MB.")
+    else:
+        image = Image.open(uploaded_file).convert("RGB")
+        st.image(image, caption="Gambar yang diunggah", use_column_width=True)
 
-    exif = extract_exif_data(image)
+        exif = extract_exif_data(image)
 
-    with st.expander("📸 Metadata Gambar (EXIF)", expanded=False):
-        for k, v in exif.items():
-            if isinstance(v, dict):
-                st.markdown(f"**{k}:**")
-                for subk, subv in v.items():
-                    st.markdown(f"- {subk}: {subv}")
-            else:
-                st.markdown(f"**{k}:** {v}")
+        with st.expander("📸 Metadata Gambar (EXIF)", expanded=False):
+            for k, v in exif.items():
+                if isinstance(v, dict):
+                    st.markdown(f"**{k}:**")
+                    for subk, subv in v.items():
+                        st.markdown(f"- {subk}: {subv}")
+                else:
+                    st.markdown(f"**{k}:** {v}")
 
-    with st.spinner("🔍 Menganalisis gambar..."):
-        image_caption = caption_image(image, processor, caption_model)
-        if exif:
-            metadata_text = "\n".join([f"{k}: {v}" for k, v in exif.items() if not isinstance(v, dict)])
-            image_caption += f"\n\n[Metadata Gambar]\n{metadata_text}"
+        with st.spinner("🔍 Menganalisis gambar..."):
+            image_caption = caption_image(image, processor, caption_model)
+            if exif:
+                metadata_text = "\n".join([f"{k}: {v}" for k, v in exif.items() if not isinstance(v, dict)])
+                image_caption += f"\n\n[Metadata Gambar]\n{metadata_text}"
 
-        st.success("✅ Gambar dianalisis.")
-        st.markdown(f"**Caption Gambar:** *{image_caption}*")
+            st.success("✅ Gambar dianalisis.")
+            st.markdown(f"**Caption Gambar:** *{image_caption}*")
 
 language = st.selectbox("🌐 Pilih Bahasa Output Artikel", ["Bahasa Indonesia", "English"])
 lang_code = "id" if language == "Bahasa Indonesia" else "en"
